@@ -1,4 +1,5 @@
 import SwiftUI
+import AuthenticationServices
 
 // MARK: - App Entry Point
 
@@ -20,20 +21,26 @@ struct PhotoVaultApp: App {
 
 struct ContentView: View {
     @Bindable var progress: SyncProgress
-    @State private var syncService: PhotoVaultSyncService?
+    @State private var syncService: PhotoVaultBucketSyncService?
     @State private var isAuthenticated = false
-    @State private var showingSettings = false
+    @State private var isCheckingAuth = true
     @State private var errorMessage: String?
-    
-    // Google OAuth credentials (replace with your own)
-    private let clientID = "YOUR_CLIENT_ID.apps.googleusercontent.com"
-    private let clientSecret = "YOUR_CLIENT_SECRET"
-    
+
+    // Google OAuth credentials — set via environment or replace directly
+    private var clientID: String {
+        ProcessInfo.processInfo.environment["GOOGLE_CLIENT_ID"] ?? "YOUR_CLIENT_ID.apps.googleusercontent.com"
+    }
+    private var clientSecret: String {
+        ProcessInfo.processInfo.environment["GOOGLE_CLIENT_SECRET"] ?? "YOUR_CLIENT_SECRET"
+    }
+
     var body: some View {
         NavigationSplitView {
             Sidebar(progress: progress)
         } detail: {
-            if !isAuthenticated {
+            if isCheckingAuth {
+                ProgressView("Checking authentication...")
+            } else if !isAuthenticated {
                 AuthenticationView(
                     clientID: clientID,
                     clientSecret: clientSecret,
@@ -53,11 +60,28 @@ struct ContentView: View {
                 )
             }
         }
+        .task {
+            await tryRestoreSession()
+        }
         .alert("Error", isPresented: .constant(errorMessage != nil)) {
             Button("OK") { errorMessage = nil }
         } message: {
             Text(errorMessage ?? "")
         }
+    }
+
+    private func tryRestoreSession() async {
+        let driveClient = GoogleDriveClient(clientID: clientID, clientSecret: clientSecret)
+        let keychain = KeychainWrapper()
+        do {
+            try await driveClient.loadTokens(from: keychain)
+            // If we have tokens, try using them
+            await initializeSyncService(driveClient: driveClient)
+            isAuthenticated = true
+        } catch {
+            // No saved tokens or invalid — need fresh auth
+        }
+        isCheckingAuth = false
     }
     
     private func initializeSyncService(driveClient: GoogleDriveClient) async {
@@ -66,14 +90,14 @@ struct ContentView: View {
                 for: .applicationSupportDirectory,
                 in: .userDomainMask
             ).first!.appendingPathComponent("PhotoVault")
-            
+
             try FileManager.default.createDirectory(
                 at: appSupport,
                 withIntermediateDirectories: true
             )
-            
+
             let config = SyncConfiguration(appSupportDir: appSupport)
-            syncService = try PhotoVaultSyncService(
+            syncService = try PhotoVaultBucketSyncService(
                 config: config,
                 driveClient: driveClient,
                 progress: progress
@@ -82,7 +106,7 @@ struct ContentView: View {
             errorMessage = error.localizedDescription
         }
     }
-    
+
     private func startSync() {
         Task {
             do {
@@ -92,21 +116,16 @@ struct ContentView: View {
             }
         }
     }
-    
+
     private func pauseSync() {
         Task {
             await syncService?.pause()
         }
     }
-    
+
     private func resumeSync() {
-        Task {
-            do {
-                try await syncService?.resumeSync()
-            } catch {
-                errorMessage = error.localizedDescription
-            }
-        }
+        // For bucket sync, resume is just start again (picks up from DB state)
+        startSync()
     }
 }
 
@@ -282,24 +301,31 @@ struct AuthenticationView: View {
     let clientID: String
     let clientSecret: String
     let onAuthenticated: (GoogleDriveClient) async -> Void
-    
+
     @State private var isAuthenticating = false
-    @Environment(\.openURL) private var openURL
-    
+    @State private var authError: String?
+
     var body: some View {
         VStack(spacing: 20) {
             Image(systemName: "lock.shield")
                 .font(.system(size: 64))
                 .foregroundStyle(.blue)
-            
+
             Text("Connect to Google Drive")
                 .font(.title)
-            
+
             Text("PhotoVault needs access to your Google Drive to back up your photos.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 400)
-            
+
+            if let authError {
+                Text(authError)
+                    .foregroundStyle(.red)
+                    .font(.caption)
+                    .frame(maxWidth: 400)
+            }
+
             Button(action: startAuthentication) {
                 if isAuthenticating {
                     ProgressView()
@@ -315,25 +341,68 @@ struct AuthenticationView: View {
         .padding(40)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    
+
     private func startAuthentication() {
         isAuthenticating = true
-        
+        authError = nil
+
         let driveClient = GoogleDriveClient(clientID: clientID, clientSecret: clientSecret)
-        
+
         Task {
-            // In a real app, you'd use ASWebAuthenticationSession
-            // For now, this is a placeholder showing the flow
-            let authURL = await driveClient.authorizationURL()
-            openURL(authURL)
-            
-            // The actual OAuth callback handling would happen via URL scheme
-            // and call driveClient.exchangeCodeForTokens(code:)
-            
-            // For demo purposes:
-            await onAuthenticated(driveClient)
+            do {
+                let authURL = await driveClient.authorizationURL()
+                let callbackScheme = "com.welshofer.photovault"
+
+                let callbackURL = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<URL, Error>) in
+                    let session = ASWebAuthenticationSession(
+                        url: authURL,
+                        callbackURLScheme: callbackScheme
+                    ) { url, error in
+                        if let error {
+                            continuation.resume(throwing: error)
+                        } else if let url {
+                            continuation.resume(returning: url)
+                        } else {
+                            continuation.resume(throwing: URLError(.cancelled))
+                        }
+                    }
+                    session.prefersEphemeralWebBrowserSession = false
+                    session.presentationContextProvider = NSApp.windows.first.map { AuthPresentationContext(anchor: $0) }
+                    session.start()
+                }
+
+                // Extract auth code from callback URL
+                guard let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false),
+                      let code = components.queryItems?.first(where: { $0.name == "code" })?.value else {
+                    throw URLError(.badServerResponse)
+                }
+
+                try await driveClient.exchangeCodeForTokens(code: code)
+
+                // Save tokens to keychain
+                let keychain = KeychainWrapper()
+                try await driveClient.saveTokens(to: keychain)
+
+                await onAuthenticated(driveClient)
+            } catch {
+                authError = error.localizedDescription
+            }
             isAuthenticating = false
         }
+    }
+}
+
+// MARK: - Auth Presentation Context
+
+private final class AuthPresentationContext: NSObject, ASWebAuthenticationPresentationContextProviding {
+    let anchor: NSWindow
+
+    init(anchor: NSWindow) {
+        self.anchor = anchor
+    }
+
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        anchor
     }
 }
 

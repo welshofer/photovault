@@ -10,7 +10,7 @@ actor GoogleDriveClient {
     // OAuth configuration — replace with your credentials
     private let clientID: String
     private let clientSecret: String  // For installed apps
-    private let redirectURI = "com.yourapp.photovault:/oauth2callback"
+    private let redirectURI = "com.welshofer.photovault:/oauth2callback"
     
     private var accessToken: String?
     private var refreshToken: String?
