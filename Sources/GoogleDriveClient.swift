@@ -10,7 +10,7 @@ actor GoogleDriveClient {
     // OAuth configuration — replace with your credentials
     private let clientID: String
     private let clientSecret: String  // For installed apps
-    private let redirectURI = "com.welshofer.photovault:/oauth2callback"
+    private var redirectURI: String = "http://127.0.0.1"  // Port appended at runtime
     
     private var accessToken: String?
     private var refreshToken: String?
@@ -21,7 +21,7 @@ actor GoogleDriveClient {
     
     // Rate limiting
     private var lastRequestTime: Date?
-    private let minRequestInterval: TimeInterval = 0.1  // 10 requests/second max
+    private let minRequestInterval: TimeInterval = 0.2  // 5 requests/second max
     
     init(clientID: String, clientSecret: String) {
         self.clientID = clientID
@@ -35,6 +35,11 @@ actor GoogleDriveClient {
     
     // MARK: - OAuth 2.0 Flow
     
+    /// Set the loopback redirect URI with the actual port from the local server
+    func setRedirectPort(_ port: UInt16) {
+        redirectURI = "http://127.0.0.1:\(port)"
+    }
+
     /// Generate the OAuth authorization URL for user consent
     func authorizationURL() -> URL {
         var components = URLComponents(string: "https://accounts.google.com/o/oauth2/v2/auth")!
@@ -42,7 +47,7 @@ actor GoogleDriveClient {
             URLQueryItem(name: "client_id", value: clientID),
             URLQueryItem(name: "redirect_uri", value: redirectURI),
             URLQueryItem(name: "response_type", value: "code"),
-            URLQueryItem(name: "scope", value: "https://www.googleapis.com/auth/drive.file"),
+            URLQueryItem(name: "scope", value: "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"),
             URLQueryItem(name: "access_type", value: "offline"),
             URLQueryItem(name: "prompt", value: "consent")
         ]
@@ -139,60 +144,131 @@ actor GoogleDriveClient {
         }
     }
     
+    // MARK: - Account Info
+
+    struct UserInfo: Sendable {
+        let email: String
+        let name: String?
+        let pictureURL: URL?
+    }
+
+    struct StorageQuota: Sendable {
+        let totalBytes: Int64
+        let usedBytes: Int64
+        var availableBytes: Int64 { totalBytes - usedBytes }
+    }
+
+    func fetchUserInfo() async throws -> UserInfo {
+        let token = try await ensureValidToken()
+        await rateLimit()
+
+        let url = URL(string: "https://www.googleapis.com/oauth2/v2/userinfo")!
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw DriveError.serverError((response as? HTTPURLResponse)?.statusCode ?? 0)
+        }
+
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
+        return UserInfo(
+            email: json["email"] as? String ?? "Unknown",
+            name: json["name"] as? String,
+            pictureURL: (json["picture"] as? String).flatMap { URL(string: $0) }
+        )
+    }
+
+    func fetchStorageQuota() async throws -> StorageQuota {
+        let token = try await ensureValidToken()
+        await rateLimit()
+
+        var components = URLComponents(string: "\(baseURL)/drive/v3/about")!
+        components.queryItems = [URLQueryItem(name: "fields", value: "storageQuota")]
+
+        var request = URLRequest(url: components.url!)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw DriveError.serverError((response as? HTTPURLResponse)?.statusCode ?? 0)
+        }
+
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
+        let quota = json["storageQuota"] as? [String: Any] ?? [:]
+
+        let total = Int64(quota["limit"] as? String ?? "0") ?? 0
+        let used = Int64(quota["usage"] as? String ?? "0") ?? 0
+        return StorageQuota(totalBytes: total, usedBytes: used)
+    }
+
+    func clearTokens(from keychain: KeychainWrapper) {
+        try? keychain.delete(key: "gdrive_access_token")
+        try? keychain.delete(key: "gdrive_refresh_token")
+        try? keychain.delete(key: "gdrive_token_expiry")
+        accessToken = nil
+        refreshToken = nil
+        tokenExpiry = nil
+    }
+
     // MARK: - Folder Operations
     
     /// Create a folder in Google Drive, returns folder ID
     func createFolder(name: String, parentID: String? = nil) async throws -> String {
-        let token = try await ensureValidToken()
-        await rateLimit()
-        
-        let url = URL(string: "\(baseURL)/drive/v3/files")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        var metadata: [String: Any] = [
-            "name": name,
-            "mimeType": "application/vnd.google-apps.folder"
-        ]
-        if let parentID {
-            metadata["parents"] = [parentID]
+        try await withRetry {
+            let token = try await self.ensureValidToken()
+            await self.rateLimit()
+
+            let url = URL(string: "\(self.baseURL)/drive/v3/files")!
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+            var metadata: [String: Any] = [
+                "name": name,
+                "mimeType": "application/vnd.google-apps.folder"
+            ]
+            if let parentID {
+                metadata["parents"] = [parentID]
+            }
+
+            request.httpBody = try JSONSerialization.data(withJSONObject: metadata)
+
+            let (data, response) = try await self.session.data(for: request)
+            try self.validateResponse(response, data: data)
+
+            let file = try JSONDecoder().decode(DriveFile.self, from: data)
+            return file.id
         }
-        
-        request.httpBody = try JSONSerialization.data(withJSONObject: metadata)
-        
-        let (data, response) = try await session.data(for: request)
-        try validateResponse(response, data: data)
-        
-        let file = try JSONDecoder().decode(DriveFile.self, from: data)
-        return file.id
     }
     
     /// Find a folder by name within a parent, returns folder ID if exists
     func findFolder(name: String, parentID: String? = nil) async throws -> String? {
-        let token = try await ensureValidToken()
-        await rateLimit()
-        
-        var query = "name = '\(name.escapedForQuery())' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
-        if let parentID {
-            query += " and '\(parentID)' in parents"
+        try await withRetry {
+            let token = try await self.ensureValidToken()
+            await self.rateLimit()
+
+            var query = "name = '\(name.escapedForQuery())' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+            if let parentID {
+                query += " and '\(parentID)' in parents"
+            }
+
+            var components = URLComponents(string: "\(self.baseURL)/drive/v3/files")!
+            components.queryItems = [
+                URLQueryItem(name: "q", value: query),
+                URLQueryItem(name: "fields", value: "files(id,name)")
+            ]
+
+            var request = URLRequest(url: components.url!)
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+            let (data, response) = try await self.session.data(for: request)
+            try self.validateResponse(response, data: data)
+
+            let fileList = try JSONDecoder().decode(DriveFileList.self, from: data)
+            return fileList.files.first?.id
         }
-        
-        var components = URLComponents(string: "\(baseURL)/drive/v3/files")!
-        components.queryItems = [
-            URLQueryItem(name: "q", value: query),
-            URLQueryItem(name: "fields", value: "files(id,name)")
-        ]
-        
-        var request = URLRequest(url: components.url!)
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        
-        let (data, response) = try await session.data(for: request)
-        try validateResponse(response, data: data)
-        
-        let fileList = try JSONDecoder().decode(DriveFileList.self, from: data)
-        return fileList.files.first?.id
     }
     
     /// Create folder hierarchy, returns the leaf folder ID
@@ -292,8 +368,8 @@ actor GoogleDriveClient {
             }
             return .incomplete(uploadedBytes: offset + Int64(data.count))
             
-        case 404:
-            // Upload session expired, need to restart
+        case 404, 410:
+            // Upload session expired/gone, need to restart
             throw DriveError.uploadSessionExpired
             
         case 500, 502, 503, 504:
@@ -375,35 +451,52 @@ actor GoogleDriveClient {
         // Seek to resume position
         try fileHandle.seek(toOffset: UInt64(uploadedBytes))
         
-        // Upload in chunks
+        // Upload in chunks, with session restart on 410/404
+        var currentUploadURI = uploadURI
+
         while uploadedBytes < fileSize {
             let remainingBytes = fileSize - uploadedBytes
             let currentChunkSize = min(Int(remainingBytes), chunkSize)
-            
+
             guard let chunkData = try fileHandle.read(upToCount: currentChunkSize) else {
                 throw DriveError.fileReadError
             }
-            
-            let result = try await withRetry(maxAttempts: 5) {
-                try await self.uploadChunk(
-                    uploadURI: uploadURI,
-                    data: chunkData,
-                    offset: uploadedBytes,
-                    totalSize: fileSize
+
+            let result: UploadChunkResult
+            do {
+                result = try await withRetry(maxAttempts: 5) {
+                    try await self.uploadChunk(
+                        uploadURI: currentUploadURI,
+                        data: chunkData,
+                        offset: uploadedBytes,
+                        totalSize: fileSize
+                    )
+                }
+            } catch DriveError.uploadSessionExpired {
+                // Session expired (404/410) — restart with a fresh URI
+                print("[GoogleDrive] Upload session expired, restarting upload for \(filename)")
+                currentUploadURI = try await initiateResumableUpload(
+                    filename: filename,
+                    mimeType: mimeType,
+                    fileSize: fileSize,
+                    parentFolderID: parentFolderID
                 )
+                uploadedBytes = 0
+                try fileHandle.seek(toOffset: 0)
+                continue
             }
-            
+
             switch result {
             case .completed(let fileID):
                 progressHandler(fileSize, fileSize)
                 return fileID
-                
+
             case .incomplete(let newUploadedBytes):
                 uploadedBytes = newUploadedBytes
                 progressHandler(uploadedBytes, fileSize)
             }
         }
-        
+
         throw DriveError.uploadFailed(0, "Upload loop ended without completion")
     }
     
@@ -439,25 +532,38 @@ actor GoogleDriveClient {
         return nil
     }
     
+    private func isRetriableError(_ error: Error) -> Bool {
+        switch error {
+        case DriveError.serverError(let code):
+            return [500, 502, 503].contains(code)
+        case DriveError.httpError(let code, _):
+            return [429, 500, 502, 503].contains(code)
+        default:
+            return false
+        }
+    }
+
     private func withRetry<T>(
-        maxAttempts: Int,
+        maxAttempts: Int = 5,
         operation: @escaping () async throws -> T
     ) async throws -> T {
         var lastError: Error?
-        
+
         for attempt in 1...maxAttempts {
             do {
                 return try await operation()
-            } catch DriveError.serverError {
-                lastError = DriveError.serverError(500)
-                // Exponential backoff: 1s, 2s, 4s, 8s, 16s
-                let delay = pow(2.0, Double(attempt - 1))
-                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
             } catch {
-                throw error  // Non-retriable error
+                if isRetriableError(error) {
+                    lastError = error
+                    let delay = pow(2.0, Double(attempt - 1)) + Double.random(in: 0...0.5)
+                    print("[GoogleDrive] Retriable error (attempt \(attempt)/\(maxAttempts)): \(error). Retrying in \(Int(delay))s...")
+                    try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                } else {
+                    throw error  // Non-retriable error
+                }
             }
         }
-        
+
         throw lastError ?? DriveError.maxRetriesExceeded
     }
     

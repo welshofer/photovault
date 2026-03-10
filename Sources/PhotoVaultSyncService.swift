@@ -43,6 +43,7 @@ final class SyncProgress {
     var totalAlbums: Int = 0
     var processedAlbums: Int = 0
     var totalAssets: Int = 0
+    var uniqueAssets: Int = 0
     var uploadedAssets: Int = 0
     var failedAssets: Int = 0
     var totalBytes: Int64 = 0
@@ -52,17 +53,29 @@ final class SyncProgress {
     var estimatedTimeRemaining: TimeInterval?
     var errors: [SyncError] = []
 
-    enum SyncPhase: String, Sendable {
+    // Per-phase granular progress
+    var phaseDetail: String?
+    var foldersCreated: Int = 0
+    var totalFolders: Int = 0
+    var manifestsGenerated: Int = 0
+    var totalManifests: Int = 0
+
+    enum SyncPhase: String, Sendable, CaseIterable {
         case idle = "Idle"
-        case cataloging = "Cataloging Photos Library"
-        case planning = "Planning Bucket Distribution"
-        case creatingFolders = "Creating Folder Structure"
+        case cataloging = "Cataloging"
+        case planning = "Planning"
+        case creatingFolders = "Creating Folders"
         case uploading = "Uploading"
-        case generatingManifests = "Generating Album Manifests"
+        case generatingManifests = "Manifests"
         case paused = "Paused"
         case completed = "Completed"
         case failed = "Failed"
     }
+
+    /// The active workflow phases (excluding terminal states)
+    static let workflowPhases: [SyncPhase] = [
+        .cataloging, .planning, .creatingFolders, .uploading, .generatingManifests
+    ]
 
     var progressFraction: Double {
         guard totalBytes > 0 else { return 0 }

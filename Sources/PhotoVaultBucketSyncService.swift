@@ -163,6 +163,7 @@ actor PhotoVaultBucketSyncService {
         
         await MainActor.run {
             progress.totalAssets = assetRecords.count
+            progress.uniqueAssets = assetRecords.count
             progress.totalBytes = totalBytes
         }
         
@@ -205,6 +206,13 @@ actor PhotoVaultBucketSyncService {
 
         // Create year/week buckets
         let bucketsByYear = Dictionary(grouping: buckets) { $0.year }
+        let totalFolderCount = buckets.count + bucketsByYear.count  // week folders + year folders
+        var foldersCreated = 0
+
+        await MainActor.run {
+            progress.totalFolders = totalFolderCount
+            progress.foldersCreated = 0
+        }
 
         for (year, yearBuckets) in bucketsByYear.sorted(by: { $0.key < $1.key }) {
             try checkCancellation()
@@ -216,6 +224,11 @@ actor PhotoVaultBucketSyncService {
             } else {
                 yearFolderID = try await driveClient.createFolder(name: String(year), parentID: mediaFolderID)
             }
+            foldersCreated += 1
+            await MainActor.run {
+                progress.foldersCreated = foldersCreated
+                progress.phaseDetail = "media/\(year)/"
+            }
 
             // Create week folders within year
             for bucket in yearBuckets {
@@ -226,6 +239,10 @@ actor PhotoVaultBucketSyncService {
                     weekFolderID = try await driveClient.createFolder(name: bucket.weekFolder, parentID: yearFolderID)
                 }
                 bucketFolderCache[bucket.mediaPath] = weekFolderID
+                foldersCreated += 1
+                await MainActor.run {
+                    progress.foldersCreated = foldersCreated
+                }
             }
         }
     }
@@ -369,8 +386,13 @@ actor PhotoVaultBucketSyncService {
         guard let albumsFolderID else {
             throw SyncServiceError.folderCreationFailed
         }
-        
-        for album in albums {
+
+        await MainActor.run {
+            progress.totalManifests = albums.count
+            progress.manifestsGenerated = 0
+        }
+
+        for (index, album) in albums.enumerated() {
             try checkCancellation()
             
             // Get all assets in this album with their Drive locations
@@ -440,6 +462,11 @@ actor PhotoVaultBucketSyncService {
                 manifestDriveID: manifestFileID,
                 manifestPath: manifestPath
             )
+
+            await MainActor.run {
+                progress.manifestsGenerated = index + 1
+                progress.phaseDetail = album.title
+            }
         }
     }
     
