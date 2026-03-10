@@ -1,0 +1,58 @@
+# Xcode
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/
+DerivedData/
+.build/
+build/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+
+# Swift Package Manager
+.swiftpm/
+Package.resolved
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Credentials - NEVER COMMIT THESE
+.env
+*.env.local
+credentials.json
+client_secret*.json
+*-credentials.json
+
+# Local database
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+PhotoVault.sqlite
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Archives
+*.zip
+*.tar.gz
+
+# Test outputs
+TestResults/
+Coverage/

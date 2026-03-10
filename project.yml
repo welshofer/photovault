@@ -1,0 +1,59 @@
+name: PhotoVault
+options:
+  bundleIdPrefix: com.welshofer
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "15.0"
+  defaultConfig: Debug
+  groupSortPosition: top
+
+packages:
+  GRDB:
+    url: https://github.com/groue/GRDB.swift
+    from: "6.0.0"
+
+targets:
+  PhotoVault:
+    type: application
+    platform: macOS
+    sources:
+      - Sources
+    resources:
+      - path: Resources
+        excludes:
+          - "*.entitlements"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.welshofer.photovault
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.9"
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        INFOPLIST_FILE: Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Resources/PhotoVault.entitlements
+        CODE_SIGN_STYLE: Automatic
+        PRODUCT_NAME: PhotoVault
+        GENERATE_INFOPLIST_FILE: NO
+        SWIFT_STRICT_CONCURRENCY: targeted
+      configs:
+        Debug:
+          SWIFT_OPTIMIZATION_LEVEL: -Onone
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: -O
+    dependencies:
+      - package: GRDB
+    entitlements:
+      path: Resources/PhotoVault.entitlements
+
+  PhotoVaultTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests
+        optional: true
+    dependencies:
+      - target: PhotoVault
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.welshofer.photovault.tests
+        SWIFT_VERSION: "5.9"

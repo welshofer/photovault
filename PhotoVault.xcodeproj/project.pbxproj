@@ -1,0 +1,454 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1159D5795D70103B6FBB5940 /* SyncDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4A6BFCC2006391E13B8FD7C /* SyncDatabase.swift */; };
+		330238FB103067A58D12AAFA /* BucketStorageSchema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25898734E7C56D6E3C166AE8 /* BucketStorageSchema.swift */; };
+		3858119D9E94DE314ED81581 /* PhotoVaultBucketSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42FC321AADE18DC47DB10421 /* PhotoVaultBucketSyncService.swift */; };
+		63E471D3B402902ED5E9CA8D /* AlbumReconstructor.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5C83E1D46C5D1156A074BA5 /* AlbumReconstructor.swift */; };
+		6D0354EAD7EE36918ED8B2A9 /* GoogleDriveClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 473E976998CAB3232E2DEBCA /* GoogleDriveClient.swift */; };
+		6EC03086DB9AB6FA2BCFF079 /* PhotoVaultApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F7D0BD6E9FACDB75AAE90C2 /* PhotoVaultApp.swift */; };
+		C94D030AAABF6370DD703287 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = 337ADF2F58CE87C571988CF3 /* GRDB */; };
+		CB4ABB25BD3A55621ABA1F4B /* PhotoKitEnumeration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A899D71701D05A4B20FBE59C /* PhotoKitEnumeration.swift */; };
+		F130699E2247B4710A838E22 /* PhotoVaultSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E48E1104A8227142644C706 /* PhotoVaultSyncService.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		ED9366786CC028FB3ADC4B0C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4BC1E598EF7565A580DE1CF6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A3A99276593F276789B36F31;
+			remoteInfo = PhotoVault;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		25898734E7C56D6E3C166AE8 /* BucketStorageSchema.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BucketStorageSchema.swift; sourceTree = "<group>"; };
+		42FC321AADE18DC47DB10421 /* PhotoVaultBucketSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoVaultBucketSyncService.swift; sourceTree = "<group>"; };
+		473E976998CAB3232E2DEBCA /* GoogleDriveClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveClient.swift; sourceTree = "<group>"; };
+		7F7D0BD6E9FACDB75AAE90C2 /* PhotoVaultApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoVaultApp.swift; sourceTree = "<group>"; };
+		9E48E1104A8227142644C706 /* PhotoVaultSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoVaultSyncService.swift; sourceTree = "<group>"; };
+		A899D71701D05A4B20FBE59C /* PhotoKitEnumeration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoKitEnumeration.swift; sourceTree = "<group>"; };
+		B3303B9C1AE8A28E6585AD64 /* PhotoVault.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoVault.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BF05DCB6F38F795CBADDC2A7 /* PhotoVaultTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PhotoVaultTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D4A6BFCC2006391E13B8FD7C /* SyncDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncDatabase.swift; sourceTree = "<group>"; };
+		E5C83E1D46C5D1156A074BA5 /* AlbumReconstructor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumReconstructor.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		56DFF067327CDADE0C3E46F8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C94D030AAABF6370DD703287 /* GRDB in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		05458644261CAC30D3A427C7 = {
+			isa = PBXGroup;
+			children = (
+				374730B521A67190F8BE081E /* Sources */,
+				DF51A60EE4F966CD6C9FF9C5 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		374730B521A67190F8BE081E /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				E5C83E1D46C5D1156A074BA5 /* AlbumReconstructor.swift */,
+				25898734E7C56D6E3C166AE8 /* BucketStorageSchema.swift */,
+				473E976998CAB3232E2DEBCA /* GoogleDriveClient.swift */,
+				A899D71701D05A4B20FBE59C /* PhotoKitEnumeration.swift */,
+				7F7D0BD6E9FACDB75AAE90C2 /* PhotoVaultApp.swift */,
+				42FC321AADE18DC47DB10421 /* PhotoVaultBucketSyncService.swift */,
+				9E48E1104A8227142644C706 /* PhotoVaultSyncService.swift */,
+				D4A6BFCC2006391E13B8FD7C /* SyncDatabase.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		DF51A60EE4F966CD6C9FF9C5 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B3303B9C1AE8A28E6585AD64 /* PhotoVault.app */,
+				BF05DCB6F38F795CBADDC2A7 /* PhotoVaultTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A3A99276593F276789B36F31 /* PhotoVault */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A6915202ED9381AF7E0265DF /* Build configuration list for PBXNativeTarget "PhotoVault" */;
+			buildPhases = (
+				DB0F74CAAEB99719153DA07E /* Sources */,
+				56DFF067327CDADE0C3E46F8 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PhotoVault;
+			packageProductDependencies = (
+				337ADF2F58CE87C571988CF3 /* GRDB */,
+			);
+			productName = PhotoVault;
+			productReference = B3303B9C1AE8A28E6585AD64 /* PhotoVault.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E953D7C6732E34481A8E89AB /* PhotoVaultTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EAB1FECE1748425FE295DF85 /* Build configuration list for PBXNativeTarget "PhotoVaultTests" */;
+			buildPhases = (
+				7944C17F59ABB63F3F3B3D74 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5807B3054203C7A0B0C04E70 /* PBXTargetDependency */,
+			);
+			name = PhotoVaultTests;
+			packageProductDependencies = (
+			);
+			productName = PhotoVaultTests;
+			productReference = BF05DCB6F38F795CBADDC2A7 /* PhotoVaultTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4BC1E598EF7565A580DE1CF6 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					A3A99276593F276789B36F31 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 18401E6CA6B3E2BB08D03820 /* Build configuration list for PBXProject "PhotoVault" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 05458644261CAC30D3A427C7;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				84AB28845BA1BB8C3F6B76DD /* XCRemoteSwiftPackageReference "GRDB.swift" */,
+			);
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A3A99276593F276789B36F31 /* PhotoVault */,
+				E953D7C6732E34481A8E89AB /* PhotoVaultTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		7944C17F59ABB63F3F3B3D74 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DB0F74CAAEB99719153DA07E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				63E471D3B402902ED5E9CA8D /* AlbumReconstructor.swift in Sources */,
+				330238FB103067A58D12AAFA /* BucketStorageSchema.swift in Sources */,
+				6D0354EAD7EE36918ED8B2A9 /* GoogleDriveClient.swift in Sources */,
+				CB4ABB25BD3A55621ABA1F4B /* PhotoKitEnumeration.swift in Sources */,
+				6EC03086DB9AB6FA2BCFF079 /* PhotoVaultApp.swift in Sources */,
+				3858119D9E94DE314ED81581 /* PhotoVaultBucketSyncService.swift in Sources */,
+				F130699E2247B4710A838E22 /* PhotoVaultSyncService.swift in Sources */,
+				1159D5795D70103B6FBB5940 /* SyncDatabase.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		5807B3054203C7A0B0C04E70 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A3A99276593F276789B36F31 /* PhotoVault */;
+			targetProxy = ED9366786CC028FB3ADC4B0C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		04DC0023E10F1376A3C39885 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Resources/PhotoVault.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.welshofer.photovault;
+				PRODUCT_NAME = PhotoVault;
+				SDKROOT = macosx;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		37CB2F3C1647AB53B6D5BF77 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		8FAE613CC0508650BFC6AEBD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.welshofer.photovault.tests;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PhotoVault.app/Contents/MacOS/PhotoVault";
+			};
+			name = Release;
+		};
+		DF12FB132F81E938181AD0BA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		E1D8C1CD29F04D385679198E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Resources/PhotoVault.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.welshofer.photovault;
+				PRODUCT_NAME = PhotoVault;
+				SDKROOT = macosx;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		E9B4D9B45B21EE53B9FD4E1D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.welshofer.photovault.tests;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PhotoVault.app/Contents/MacOS/PhotoVault";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		18401E6CA6B3E2BB08D03820 /* Build configuration list for PBXProject "PhotoVault" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DF12FB132F81E938181AD0BA /* Debug */,
+				37CB2F3C1647AB53B6D5BF77 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A6915202ED9381AF7E0265DF /* Build configuration list for PBXNativeTarget "PhotoVault" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E1D8C1CD29F04D385679198E /* Debug */,
+				04DC0023E10F1376A3C39885 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		EAB1FECE1748425FE295DF85 /* Build configuration list for PBXNativeTarget "PhotoVaultTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E9B4D9B45B21EE53B9FD4E1D /* Debug */,
+				8FAE613CC0508650BFC6AEBD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		84AB28845BA1BB8C3F6B76DD /* XCRemoteSwiftPackageReference "GRDB.swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/groue/GRDB.swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 6.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		337ADF2F58CE87C571988CF3 /* GRDB */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 84AB28845BA1BB8C3F6B76DD /* XCRemoteSwiftPackageReference "GRDB.swift" */;
+			productName = GRDB;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 4BC1E598EF7565A580DE1CF6 /* Project object */;
+}
