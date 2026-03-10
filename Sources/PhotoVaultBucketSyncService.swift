@@ -234,17 +234,30 @@ actor PhotoVaultBucketSyncService {
     
     private func uploadAllAssets() async throws {
         let batchSize = 100
-        
+        var totalUploaded = 0
+
         while !isCancelled {
+            // Debug limit: stop after N assets
+            if config.debugMaxAssets > 0 && totalUploaded >= config.debugMaxAssets {
+                print("🛑 Debug limit reached (\(config.debugMaxAssets) assets). Stopping uploads.")
+                break
+            }
+
             try await waitIfPaused()
-            
-            let pending = try await database.fetchPendingAssets(limit: batchSize)
+
+            let limit = config.debugMaxAssets > 0
+                ? min(batchSize, config.debugMaxAssets - totalUploaded)
+                : batchSize
+
+            let pending = try await database.fetchPendingAssets(limit: limit)
             if pending.isEmpty {
                 let failed = try await database.fetchFailedAssets(maxRetries: config.maxRetries)
                 if failed.isEmpty { break }
                 try await uploadBatch(failed)
+                totalUploaded += failed.count
             } else {
                 try await uploadBatch(pending)
+                totalUploaded += pending.count
             }
         }
     }

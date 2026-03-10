@@ -26,12 +26,14 @@ struct ContentView: View {
     @State private var isCheckingAuth = true
     @State private var errorMessage: String?
 
-    // Google OAuth credentials — set via environment or replace directly
+    // Google OAuth credentials
     private var clientID: String {
-        ProcessInfo.processInfo.environment["GOOGLE_CLIENT_ID"] ?? "YOUR_CLIENT_ID.apps.googleusercontent.com"
+        ProcessInfo.processInfo.environment["GOOGLE_CLIENT_ID"]
+            ?? "REDACTED_CLIENT_ID.apps.googleusercontent.com"
     }
     private var clientSecret: String {
-        ProcessInfo.processInfo.environment["GOOGLE_CLIENT_SECRET"] ?? "YOUR_CLIENT_SECRET"
+        ProcessInfo.processInfo.environment["GOOGLE_CLIENT_SECRET"]
+            ?? "REDACTED_CLIENT_SECRET"
     }
 
     var body: some View {
@@ -96,7 +98,8 @@ struct ContentView: View {
                 withIntermediateDirectories: true
             )
 
-            let config = SyncConfiguration(appSupportDir: appSupport)
+            var config = SyncConfiguration(appSupportDir: appSupport)
+            config.debugMaxAssets = 10  // TODO: Remove for production
             syncService = try PhotoVaultBucketSyncService(
                 config: config,
                 driveClient: driveClient,

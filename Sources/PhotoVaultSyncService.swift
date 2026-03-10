@@ -22,7 +22,10 @@ struct SyncConfiguration: Codable, Sendable {
     
     /// Skip assets that are in iCloud but not downloaded
     var skipICloudOnlyAssets: Bool = false
-    
+
+    /// Max assets to upload (0 = unlimited). Use for testing.
+    var debugMaxAssets: Int = 0
+
     /// Path to the sync database
     var databasePath: String
     
