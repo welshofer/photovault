@@ -135,8 +135,8 @@ struct ContentView: View {
 
             print("[PhotoVault] Initializing sync service at \(appSupport.path)")
             var config = SyncConfiguration(appSupportDir: appSupport)
-            config.debugMaxAssets = 10  // TODO: Remove for production
-            config.skipICloudOnlyAssets = true  // Don't download from iCloud on this machine
+            config.debugMaxAssets = 0  // No limit — upload everything
+            config.skipICloudOnlyAssets = false  // All originals are local on RAID machine
             syncService = try PhotoVaultBucketSyncService(
                 config: config,
                 driveClient: driveClient,

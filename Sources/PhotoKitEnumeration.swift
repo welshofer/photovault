@@ -266,7 +266,7 @@ actor AssetExportService {
         // Export using continuation for async/await
         return try await withCheckedThrowingContinuation { continuation in
             let options = PHAssetResourceRequestOptions()
-            options.isNetworkAccessAllowed = false  // Never pull from iCloud — only export locally available originals  // Download from iCloud if needed
+            options.isNetworkAccessAllowed = true  // All originals expected local; allow iCloud fallback for stragglers  // Download from iCloud if needed
             
             resourceManager.writeData(for: resource, toFile: destinationURL, options: options) { error in
                 if let error {
@@ -305,7 +305,7 @@ actor AssetExportService {
         
         return try await withCheckedThrowingContinuation { continuation in
             let options = PHAssetResourceRequestOptions()
-            options.isNetworkAccessAllowed = false  // Never pull from iCloud — only export locally available originals
+            options.isNetworkAccessAllowed = true  // All originals expected local; allow iCloud fallback for stragglers
             options.progressHandler = { progress in
                 Task { @MainActor in
                     progressHandler(progress)
