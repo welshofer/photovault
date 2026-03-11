@@ -1,82 +1,89 @@
 # Google Cloud Setup Guide
 
+Complete step-by-step guide to creating a Google Cloud project and OAuth credentials for PhotoVault.
+
+**Time required:** ~10 minutes
+
+---
+
 ## Prerequisites
 
-- Google Account (personal Gmail or Google Workspace)
-- Google Drive with sufficient storage (30TB recommended for 11TB library)
-- macOS computer for development
+- A Google account (personal Gmail or Google Workspace)
+- Google Drive storage sufficient for your library (see [pricing](#cost) below)
 
 ---
 
-## Step 1: Create Google Cloud Project
+## Step 1: Create a Google Cloud Project
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-
-2. Click the project dropdown at the top → **New Project**
-
-3. Configure the project:
-   - **Project name**: `PhotoVault` (or your preference)
-   - **Organization**: Leave as-is (or select if using Workspace)
-   - **Location**: Leave as-is
-
-4. Click **Create**
-
-5. Wait for project creation, then select it from the dropdown
+2. Click the **project dropdown** at the top of the page
+3. Click **New Project**
+4. Configure:
+   - **Project name:** `PhotoVault` (or your preference)
+   - **Organization:** Leave as default
+   - **Location:** Leave as default
+5. Click **Create**
+6. Wait for the project to be created, then **select it** from the project dropdown
 
 ---
 
-## Step 2: Enable Google Drive API
+## Step 2: Enable the Google Drive API
 
-1. In the Cloud Console, go to **APIs & Services** → **Library**
-
+1. In the Cloud Console sidebar, go to **APIs & Services** → **Library**
 2. Search for **Google Drive API**
-
-3. Click on it, then click **Enable**
-
-4. Wait for activation (usually instant)
+3. Click on it
+4. Click **Enable**
+5. Wait for activation (usually instant)
 
 ---
 
-## Step 3: Configure OAuth Consent Screen
+## Step 3: Configure the OAuth Consent Screen
+
+This tells Google what your app is and what permissions it needs.
 
 1. Go to **APIs & Services** → **OAuth consent screen**
 
-2. Select User Type:
-   - **External**: For personal use (anyone with Google account)
-   - **Internal**: Only if using Google Workspace (organization only)
-   
-   For personal use, select **External** → **Create**
+2. Select **User Type:**
+   - **External** — Choose this for personal use (anyone with a Google account)
+   - **Internal** — Only available with Google Workspace
 
-3. Fill in the OAuth consent screen:
+3. Click **Create**
 
-   **App Information**:
-   - App name: `PhotoVault`
-   - User support email: Your email
-   - App logo: Optional (skip for personal use)
+4. Fill in **App Information:**
 
-   **App domain**: Leave blank for personal use
+   | Field | Value |
+   |-------|-------|
+   | App name | `PhotoVault` |
+   | User support email | Your email address |
+   | App logo | Skip (optional) |
 
-   **Developer contact information**:
-   - Email: Your email
+5. **App domain:** Leave all fields blank for personal use
 
-4. Click **Save and Continue**
+6. **Developer contact information:** Enter your email
 
-5. **Scopes** page:
+7. Click **Save and Continue**
+
+8. **Scopes** page:
    - Click **Add or Remove Scopes**
-   - Find and select: `https://www.googleapis.com/auth/drive.file`
-   - This scope allows access ONLY to files created by the app
-   - Click **Update**
+   - Find and check these scopes:
 
-6. Click **Save and Continue**
+   | Scope | Purpose |
+   |-------|---------|
+   | `https://www.googleapis.com/auth/drive.file` | Access files created by PhotoVault only |
+   | `https://www.googleapis.com/auth/userinfo.email` | Display your email in Settings |
+   | `https://www.googleapis.com/auth/userinfo.profile` | Display your name in Settings |
 
-7. **Test users** (required for External apps in testing):
+   - Click **Update**, then **Save and Continue**
+
+9. **Test users** page:
    - Click **Add Users**
-   - Add your Google account email
+   - Enter the Google account email you'll use with PhotoVault
    - Click **Add**
+   - Click **Save and Continue**
 
-8. Click **Save and Continue**
+10. Review the summary and click **Back to Dashboard**
 
-9. Review summary, click **Back to Dashboard**
+> **Important:** While your app is in "Testing" mode, only the test users you added can authenticate. This is fine for personal use — you can have up to 100 test users.
 
 ---
 
@@ -87,214 +94,209 @@
 2. Click **Create Credentials** → **OAuth client ID**
 
 3. Configure:
-   - **Application type**: **Desktop app**
-   - **Name**: `PhotoVault macOS`
+   - **Application type:** **Desktop app**
+   - **Name:** `PhotoVault macOS`
 
 4. Click **Create**
 
-5. A dialog shows your credentials:
-   - **Client ID**: `XXXXXX.apps.googleusercontent.com`
-   - **Client Secret**: `GOCSPX-XXXXXXXXXX`
+5. A dialog appears with your credentials:
+   - **Client ID:** `XXXXXX.apps.googleusercontent.com`
+   - **Client Secret:** `GOCSPX-XXXXXXXXXX`
 
-6. Click **Download JSON** to save credentials file
+6. **Copy both values** — you'll need them in the next step
 
 7. Click **OK**
 
+> **Security note:** The client secret for Desktop apps is not truly secret (it's embedded in the app binary). Google knows this — security relies on the user granting consent, not on the secret being hidden. This is standard for all desktop OAuth apps.
+
 ---
 
-## Step 5: Configure PhotoVault with Credentials
+## Step 5: Configure PhotoVault
 
-### Option A: Environment Variables (Recommended)
+You have two options for providing credentials to PhotoVault:
 
-Create a `.env` file (do NOT commit to git):
+### Option A: Environment Variables (recommended)
+
+Create a `.env` file in the project root:
 
 ```bash
-GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=GOCSPX-your-client-secret
+GOOGLE_CLIENT_ID=209153289523-xxxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxx
 ```
 
-### Option B: Direct Configuration
+Then set them in your Xcode scheme:
+1. Product → Scheme → Edit Scheme (or `Cmd+<`)
+2. Select **Run** in the sidebar
+3. Go to the **Arguments** tab
+4. Under **Environment Variables**, add:
+   - `GOOGLE_CLIENT_ID` = your client ID
+   - `GOOGLE_CLIENT_SECRET` = your client secret
 
-Update `PhotoVaultApp.swift`:
+### Option B: Edit Source (simpler)
 
-```swift
-private let clientID = "your-client-id.apps.googleusercontent.com"
-private let clientSecret = "GOCSPX-your-client-secret"
-```
-
-### Option C: Secure Storage
-
-Store in Keychain at first launch, never hardcode.
-
----
-
-## Step 6: Configure URL Scheme
-
-The OAuth flow redirects back to your app via a custom URL scheme.
-
-1. In Xcode, select your target → **Info** tab
-
-2. Expand **URL Types**
-
-3. Click **+** to add a new URL type:
-   - **Identifier**: `com.yourname.photovault.oauth`
-   - **URL Schemes**: `com.yourname.photovault`
-   - **Role**: Editor
-
-4. The redirect URI will be: `com.yourname.photovault:/oauth2callback`
-
-5. This must match what you use in `GoogleDriveClient`:
-   ```swift
-   private let redirectURI = "com.yourname.photovault:/oauth2callback"
-   ```
-
----
-
-## Step 7: Handle OAuth Callback
-
-In your `App` struct, handle the URL:
+Update the fallback values in `Sources/PhotoVaultApp.swift`:
 
 ```swift
-@main
-struct PhotoVaultApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .onOpenURL { url in
-                    // Handle OAuth callback
-                    if url.scheme == "com.yourname.photovault" {
-                        handleOAuthCallback(url: url)
-                    }
-                }
-        }
-    }
+private var clientID: String {
+    ProcessInfo.processInfo.environment["GOOGLE_CLIENT_ID"]
+        ?? "YOUR_CLIENT_ID_HERE.apps.googleusercontent.com"
+}
+private var clientSecret: String {
+    ProcessInfo.processInfo.environment["GOOGLE_CLIENT_SECRET"]
+        ?? "GOCSPX-YOUR_SECRET_HERE"
 }
 ```
+
+> **Warning:** If using Option B, do not commit your credentials to a public repository.
+
+---
+
+## Step 6: Authenticate
+
+1. Launch PhotoVault
+2. Click **Sign in with Google**
+3. Your default browser opens to Google's consent page
+4. Sign in with your Google account
+
+   > If you see **"This app isn't verified"**: Click **Advanced** → **Go to PhotoVault (unsafe)**. This is expected for apps in testing mode.
+
+5. Grant PhotoVault access to Google Drive
+6. You'll see **"Authentication Successful"** in the browser
+7. Return to PhotoVault — the sync dashboard appears
+8. Check Settings (`Cmd+,`) to verify your account and storage
+
+### How Authentication Works
+
+PhotoVault uses a **loopback HTTP server** for the OAuth redirect:
+
+1. A temporary HTTP server starts on `127.0.0.1` with a random port
+2. The authorization URL includes `redirect_uri=http://127.0.0.1:<port>`
+3. After you grant consent, Google redirects your browser to the loopback server
+4. PhotoVault captures the authorization code from the redirect
+5. The code is exchanged for access + refresh tokens
+6. Tokens are stored securely in the macOS **Keychain**
+
+This is Google's recommended approach for Desktop app clients. No custom URL schemes needed.
 
 ---
 
 ## API Quotas and Limits
 
-### Default Quotas
+### Default Quotas (free)
 
 | Quota | Limit |
 |-------|-------|
 | Queries per day | 1,000,000,000 |
 | Queries per 100 seconds per user | 1,000 |
-| Queries per 100 seconds | 10,000 |
+| Queries per 100 seconds (project) | 10,000 |
 
 ### Upload Limits
 
 | Limit | Value |
 |-------|-------|
-| File size limit | 5 TB per file |
-| Upload session duration | 1 week |
-| Resumable upload chunk size | Min 256 KB |
+| Max file size | 5 TB per file |
+| Resumable upload session | Expires after 1 week of inactivity |
+| Min chunk size | 256 KB |
+| Recommended chunk size | 10 MB (PhotoVault default) |
 
-### Recommendations
+### PhotoVault Rate Limiting
 
-- Use 10 MB chunks for resumable uploads
-- Implement rate limiting (100ms between requests)
-- Use exponential backoff on 5xx errors
-- Cache folder IDs to reduce lookup calls
+PhotoVault enforces its own rate limit of **5 requests per second** (200ms between requests) to stay well within Google's limits. On 429/5xx errors, it uses exponential backoff with jitter.
 
 ---
 
 ## Scopes Reference
 
-| Scope | Description | Use Case |
-|-------|-------------|----------|
-| `drive.file` | Access files created by app | **Use this** |
-| `drive` | Full access to all files | Not needed |
-| `drive.readonly` | Read-only access | Not sufficient |
-| `drive.metadata` | Metadata only | Not sufficient |
+| Scope | What It Does | Why PhotoVault Needs It |
+|-------|-------------|------------------------|
+| `drive.file` | Access **only** files the app creates | Upload photos, create folders and manifests |
+| `userinfo.email` | Read your email address | Display in Settings pane |
+| `userinfo.profile` | Read your name | Display in Settings pane |
 
-**We use `drive.file`** because:
-- Most restrictive scope that works
-- Can only see/modify files we create
-- Cannot access user's other Drive files
-- Safer for users
+**What PhotoVault cannot do:**
+- Cannot see your other Google Drive files
+- Cannot delete files (even its own — Drive API with `drive.file` scope is append-focused)
+- Cannot access your contacts, calendar, or any other Google service
 
 ---
 
-## Publishing (Optional)
+## Cost
 
-For personal use, you can stay in "Testing" mode permanently (up to 100 test users).
+**Google Drive API usage is free** for reasonable volumes.
 
-To publish for wider use:
+**Google Drive storage** pricing (if you need more than the free 15 GB):
 
-1. OAuth consent screen → **Publish App**
+| Plan | Storage | Price (US) |
+|------|---------|------------|
+| Google One Basic | 100 GB | $1.99/month |
+| Google One Standard | 200 GB | $2.99/month |
+| Google One Premium | 2 TB | $9.99/month |
+| Google One 5 TB | 5 TB | $24.99/month |
+| Google One 10 TB | 10 TB | $49.99/month |
+| Google One 20 TB | 20 TB | $99.99/month |
+| Google One 30 TB | 30 TB | $149.99/month |
 
-2. Google will review your app
+> **Tip:** For an 11 TB library, you need at least the 20 TB plan. After deduplication, actual storage used will be less than your raw library size.
 
-3. Requirements for verification:
+---
+
+## Publishing Your App (Optional)
+
+For personal use, you can stay in **"Testing" mode** permanently (up to 100 test users). No need to publish.
+
+If you want to distribute PhotoVault to others:
+
+1. Go to OAuth consent screen → **Publish App**
+2. Google will require:
    - Privacy policy URL
    - Terms of service URL
-   - Homepage URL
-   - Demonstrate scope usage
+   - A homepage for the app
    - Security assessment (for sensitive scopes)
+3. Review takes 2-6 weeks
 
 ---
 
 ## Troubleshooting
 
 ### "Access blocked: This app's request is invalid"
-
-- Verify redirect URI matches exactly
-- Check client ID is correct
-- Ensure user is added as test user
+- Verify your **Client ID** is correct
+- Make sure you selected **Desktop app** as the application type (not Web application)
+- Check that you added yourself as a **test user** in the consent screen
 
 ### "This app isn't verified"
-
 - Expected for testing mode
-- Click "Advanced" → "Go to PhotoVault (unsafe)"
-- Or add yourself as test user
+- Click **Advanced** → **Go to PhotoVault (unsafe)**
 
-### "Rate Limit Exceeded"
+### "Error: redirect_uri_mismatch"
+- The OAuth client type must be **Desktop app**, not Web application
+- Desktop app clients use `http://127.0.0.1:<port>` redirects, which Google allows automatically
+- You do NOT need to configure redirect URIs in the Cloud Console for Desktop apps
 
-- Reduce `maxConcurrentUploads` to 1-2
-- Increase delay between requests
-- Check quota usage in Cloud Console
+### "Rate Limit Exceeded" (HTTP 429)
+- PhotoVault handles this automatically with exponential backoff
+- If it persists, try reducing `maxConcurrentUploads` to 1 or 2
 
-### "Upload session expired"
+### "Upload session expired" (HTTP 410)
+- Upload sessions expire after 1 week of inactivity
+- PhotoVault handles this automatically by restarting the upload with a fresh session
+- No action needed
 
-- Sessions expire after 1 week of inactivity
-- App automatically restarts expired uploads
-- Check if upload URI is still valid before resuming
+### "Invalid Credentials" / Token Errors
+- Refresh tokens can expire after 6 months of inactivity
+- Sign out (Settings → Sign Out) and sign in again
+- Check if you revoked access at [myaccount.google.com/permissions](https://myaccount.google.com/permissions)
 
-### "Invalid Credentials"
-
-- Refresh token may have expired (6 months inactive)
-- Re-authenticate user
-- Check if OAuth consent was revoked
-
----
-
-## Cost
-
-**Google Drive API is free** for reasonable usage.
-
-**Google Drive Storage** pricing (if exceeding free 15GB):
-
-| Plan | Storage | Price |
-|------|---------|-------|
-| Google One 100GB | 100 GB | $1.99/month |
-| Google One 200GB | 200 GB | $2.99/month |
-| Google One 2TB | 2 TB | $9.99/month |
-| Google One 5TB | 5 TB | $24.99/month |
-| Google One 10TB | 10 TB | $49.99/month |
-| Google One 20TB | 20 TB | $99.99/month |
-| Google One 30TB | 30 TB | $149.99/month |
-
-For 11TB library, you'll need at least Google One 20TB.
+### OAuth window never completes
+- Make sure no firewall is blocking localhost connections
+- Try quitting and relaunching PhotoVault
+- Check Console.app for `[PhotoVault]` log messages
 
 ---
 
 ## Security Best Practices
 
-1. **Never commit credentials** to version control
-2. **Use Keychain** for token storage on macOS
-3. **Minimal scope** (`drive.file` only)
-4. **Validate redirect URIs** to prevent token theft
-5. **Handle token refresh** securely
-6. **Clear tokens** on sign-out
+1. **Never commit credentials** to version control (`.env` is gitignored)
+2. **Keychain storage** — Tokens are stored in macOS Keychain, not in files
+3. **Minimal scope** — `drive.file` can only access files PhotoVault creates
+4. **No plain-text secrets** — Use environment variables or Keychain
+5. **Revoke access** if needed at [myaccount.google.com/permissions](https://myaccount.google.com/permissions)

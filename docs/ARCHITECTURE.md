@@ -283,32 +283,35 @@ stateDiagram-v2
 
 ---
 
-## OAuth 2.0 Flow
+## OAuth 2.0 Flow (Desktop App with Loopback Server)
 
 ```mermaid
 sequenceDiagram
     participant App as PhotoVault
+    participant Server as Loopback HTTP Server<br/>127.0.0.1:random_port
     participant Browser as System Browser
     participant Google as Google OAuth
     participant Drive as Google Drive API
-    
-    App->>App: Generate auth URL
-    App->>Browser: Open auth URL
-    Browser->>Google: User signs in
-    Google->>Google: User grants consent
-    Google->>App: Redirect with auth code
-    
-    App->>Google: Exchange code for tokens
+
+    App->>Server: Start HTTP server on 127.0.0.1:0
+    Server-->>App: Assigned port (e.g., 52847)
+    App->>Browser: Open authorization URL<br/>redirect_uri=http://127.0.0.1:52847
+    Browser->>Google: User signs in + grants consent
+    Google->>Server: HTTP redirect with ?code=AUTH_CODE
+    Server->>Browser: "Authentication Successful" HTML
+    Server->>App: Return authorization code
+    App->>Server: Shut down server
+
+    App->>Google: POST /token (exchange code for tokens)
     Google-->>App: access_token + refresh_token
-    App->>App: Store in Keychain
-    
+    App->>App: Store refresh_token in macOS Keychain
+
     loop API Requests
         App->>Drive: Request with access_token
         alt Token Valid
             Drive-->>App: Response
-        else Token Expired
-            Drive-->>App: 401 Unauthorized
-            App->>Google: Refresh token
+        else Token Expired (401)
+            App->>Google: POST /token (refresh)
             Google-->>App: New access_token
             App->>Drive: Retry request
             Drive-->>App: Response
