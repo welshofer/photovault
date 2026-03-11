@@ -54,12 +54,16 @@ struct ContentView: View {
 
     // Google OAuth credentials
     private var clientID: String {
-        ProcessInfo.processInfo.environment["GOOGLE_CLIENT_ID"]
-            ?? "REDACTED_CLIENT_ID.apps.googleusercontent.com"
+        guard let id = ProcessInfo.processInfo.environment["GOOGLE_CLIENT_ID"], !id.isEmpty else {
+            fatalError("GOOGLE_CLIENT_ID environment variable not set. See docs/GOOGLE_CLOUD_SETUP.md")
+        }
+        return id
     }
     private var clientSecret: String {
-        ProcessInfo.processInfo.environment["GOOGLE_CLIENT_SECRET"]
-            ?? "REDACTED_CLIENT_SECRET"
+        guard let secret = ProcessInfo.processInfo.environment["GOOGLE_CLIENT_SECRET"], !secret.isEmpty else {
+            fatalError("GOOGLE_CLIENT_SECRET environment variable not set. See docs/GOOGLE_CLOUD_SETUP.md")
+        }
+        return secret
     }
 
     var body: some View {
