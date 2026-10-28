@@ -170,11 +170,12 @@ private var clientSecret: String {
 PhotoVault uses a **loopback HTTP server** for the OAuth redirect:
 
 1. A temporary HTTP server starts on `127.0.0.1` with a random port
-2. The authorization URL includes `redirect_uri=http://127.0.0.1:<port>`
-3. After you grant consent, Google redirects your browser to the loopback server
-4. PhotoVault captures the authorization code from the redirect
-5. The code is exchanged for access + refresh tokens
-6. Tokens are stored securely in the macOS **Keychain**
+2. PhotoVault generates a random `state` value and a PKCE code verifier for this sign-in attempt
+3. The authorization URL includes `redirect_uri=http://127.0.0.1:<port>`, the `state`, and a `code_challenge` (SHA-256 of the verifier, `code_challenge_method=S256`)
+4. After you grant consent, Google redirects your browser to the loopback server
+5. PhotoVault accepts the redirect only if it is `GET /` and carries the same `state`; anything else is rejected and ignored
+6. The code is exchanged for access + refresh tokens together with the PKCE `code_verifier`, so an intercepted code can't be redeemed without it
+7. Tokens are stored securely in the macOS **Keychain**
 
 This is Google's recommended approach for Desktop app clients. No custom URL schemes needed.
 

@@ -295,14 +295,17 @@ sequenceDiagram
 
     App->>Server: Start HTTP server on 127.0.0.1:0
     Server-->>App: Assigned port (e.g., 52847)
-    App->>Browser: Open authorization URL<br/>redirect_uri=http://127.0.0.1:52847
+    App->>App: Generate random state + PKCE code_verifier
+    App->>Browser: Open authorization URL<br/>redirect_uri=http://127.0.0.1:52847<br/>state, code_challenge (S256)
     Browser->>Google: User signs in + grants consent
-    Google->>Server: HTTP redirect with ?code=AUTH_CODE
+    Google->>Server: HTTP redirect to / with ?state=STATE&code=AUTH_CODE
+    Server->>Server: Reject unless GET / and state matches
     Server->>Browser: "Authentication Successful" HTML
-    Server->>App: Return authorization code
+    Server->>App: Return authorization code + state
     App->>Server: Shut down server
 
-    App->>Google: POST /token (exchange code for tokens)
+    App->>App: Re-check state (constant time), consume attempt
+    App->>Google: POST /token (code + code_verifier)
     Google-->>App: access_token + refresh_token
     App->>App: Store refresh_token in macOS Keychain
 

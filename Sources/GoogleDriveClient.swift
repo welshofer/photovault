@@ -11,6 +11,9 @@ actor GoogleDriveClient {
     private let clientID: String
     private let clientSecret: String  // For installed apps
     private var redirectURI: String = "http://127.0.0.1"  // Port appended at runtime
+
+    /// `state` and PKCE verifier for the sign-in in progress; single use, cleared by the token exchange
+    private var pendingAuthorization: OAuthAuthorizationAttempt?
     
     private var accessToken: String?
     private var refreshToken: String?
@@ -40,22 +43,55 @@ actor GoogleDriveClient {
         redirectURI = "http://127.0.0.1:\(port)"
     }
 
-    /// Generate the OAuth authorization URL for user consent
-    func authorizationURL() -> URL {
-        var components = URLComponents(string: "https://accounts.google.com/o/oauth2/v2/auth")!
+    /// The URL to open for user consent, and the `state` the redirect must carry back
+    struct AuthorizationRequest: Sendable {
+        let url: URL
+        let state: String
+    }
+
+    /// Start a sign-in attempt: generate a fresh `state` and PKCE (S256) code verifier,
+    /// remember them for the token exchange, and build the OAuth authorization URL.
+    /// Each call replaces any earlier attempt that was not completed.
+    func makeAuthorizationRequest() throws -> AuthorizationRequest {
+        let attempt = try OAuthAuthorizationAttempt.make()
+        guard var components = URLComponents(string: "https://accounts.google.com/o/oauth2/v2/auth") else {
+            throw OAuthFlowError.invalidAuthorizationURL
+        }
         components.queryItems = [
             URLQueryItem(name: "client_id", value: clientID),
             URLQueryItem(name: "redirect_uri", value: redirectURI),
             URLQueryItem(name: "response_type", value: "code"),
             URLQueryItem(name: "scope", value: "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"),
             URLQueryItem(name: "access_type", value: "offline"),
-            URLQueryItem(name: "prompt", value: "consent")
+            URLQueryItem(name: "prompt", value: "consent"),
+            URLQueryItem(name: "state", value: attempt.state),
+            URLQueryItem(name: "code_challenge", value: attempt.codeChallenge),
+            URLQueryItem(name: "code_challenge_method", value: "S256")
         ]
-        return components.url!
+        guard let url = components.url else {
+            throw OAuthFlowError.invalidAuthorizationURL
+        }
+        pendingAuthorization = attempt
+        return AuthorizationRequest(url: url, state: attempt.state)
+    }
+
+    /// Discard the sign-in attempt in progress, if any (e.g. after a failed or cancelled sign-in)
+    func cancelPendingAuthorization() {
+        pendingAuthorization = nil
     }
     
-    /// Exchange authorization code for tokens
-    func exchangeCodeForTokens(code: String) async throws {
+    /// Exchange authorization code for tokens.
+    /// `state` is the value the redirect carried; it must match the pending attempt exactly.
+    /// The attempt is consumed before any network call, so a code/state pair is accepted at most once.
+    func exchangeCodeForTokens(code: String, state: String) async throws {
+        guard let attempt = pendingAuthorization else {
+            throw OAuthFlowError.noPendingAuthorization
+        }
+        pendingAuthorization = nil
+        guard OAuthSecurity.constantTimeEquals(state, attempt.state) else {
+            throw OAuthFlowError.stateMismatch
+        }
+
         let url = URL(string: "https://oauth2.googleapis.com/token")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -66,7 +102,8 @@ actor GoogleDriveClient {
             "client_id": clientID,
             "client_secret": clientSecret,
             "redirect_uri": redirectURI,
-            "grant_type": "authorization_code"
+            "grant_type": "authorization_code",
+            "code_verifier": attempt.codeVerifier
         ]
         request.httpBody = body.percentEncoded()
         
