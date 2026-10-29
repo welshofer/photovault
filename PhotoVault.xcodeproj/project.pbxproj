@@ -16,6 +16,8 @@
 		C94D030AAABF6370DD703287 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = 337ADF2F58CE87C571988CF3 /* GRDB */; };
 		CB4ABB25BD3A55621ABA1F4B /* PhotoKitEnumeration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A899D71701D05A4B20FBE59C /* PhotoKitEnumeration.swift */; };
 		F130699E2247B4710A838E22 /* PhotoVaultSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E48E1104A8227142644C706 /* PhotoVaultSyncService.swift */; };
+		4D19E9DF5C56596D677F2960 /* OAuthSecurity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77E882D23878497ECAF00159 /* OAuthSecurity.swift */; };
+		48B247D12ECFCD726BA6DCC3 /* OAuthSecurityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A705FE35E70D9A37C7301AB3 /* OAuthSecurityTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -39,6 +41,8 @@
 		BF05DCB6F38F795CBADDC2A7 /* PhotoVaultTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PhotoVaultTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D4A6BFCC2006391E13B8FD7C /* SyncDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncDatabase.swift; sourceTree = "<group>"; };
 		E5C83E1D46C5D1156A074BA5 /* AlbumReconstructor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumReconstructor.swift; sourceTree = "<group>"; };
+		77E882D23878497ECAF00159 /* OAuthSecurity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuthSecurity.swift; sourceTree = "<group>"; };
+		A705FE35E70D9A37C7301AB3 /* OAuthSecurityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuthSecurityTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,6 +61,7 @@
 			isa = PBXGroup;
 			children = (
 				374730B521A67190F8BE081E /* Sources */,
+				A733BB4932FB3AD0AFF7CA58 /* Tests */,
 				DF51A60EE4F966CD6C9FF9C5 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -67,6 +72,7 @@
 				E5C83E1D46C5D1156A074BA5 /* AlbumReconstructor.swift */,
 				25898734E7C56D6E3C166AE8 /* BucketStorageSchema.swift */,
 				473E976998CAB3232E2DEBCA /* GoogleDriveClient.swift */,
+				77E882D23878497ECAF00159 /* OAuthSecurity.swift */,
 				A899D71701D05A4B20FBE59C /* PhotoKitEnumeration.swift */,
 				7F7D0BD6E9FACDB75AAE90C2 /* PhotoVaultApp.swift */,
 				42FC321AADE18DC47DB10421 /* PhotoVaultBucketSyncService.swift */,
@@ -74,6 +80,14 @@
 				D4A6BFCC2006391E13B8FD7C /* SyncDatabase.swift */,
 			);
 			path = Sources;
+			sourceTree = "<group>";
+		};
+		A733BB4932FB3AD0AFF7CA58 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				A705FE35E70D9A37C7301AB3 /* OAuthSecurityTests.swift */,
+			);
+			path = Tests;
 			sourceTree = "<group>";
 		};
 		DF51A60EE4F966CD6C9FF9C5 /* Products */ = {
@@ -166,6 +180,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				48B247D12ECFCD726BA6DCC3 /* OAuthSecurityTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -176,6 +191,7 @@
 				63E471D3B402902ED5E9CA8D /* AlbumReconstructor.swift in Sources */,
 				330238FB103067A58D12AAFA /* BucketStorageSchema.swift in Sources */,
 				6D0354EAD7EE36918ED8B2A9 /* GoogleDriveClient.swift in Sources */,
+				4D19E9DF5C56596D677F2960 /* OAuthSecurity.swift in Sources */,
 				CB4ABB25BD3A55621ABA1F4B /* PhotoKitEnumeration.swift in Sources */,
 				6EC03086DB9AB6FA2BCFF079 /* PhotoVaultApp.swift in Sources */,
 				3858119D9E94DE314ED81581 /* PhotoVaultBucketSyncService.swift in Sources */,

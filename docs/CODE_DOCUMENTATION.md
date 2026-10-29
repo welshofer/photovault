@@ -309,8 +309,9 @@ actor GoogleDriveClient {
     init(clientID: String, clientSecret: String)
     
     // OAuth
-    func authorizationURL() -> URL
-    func exchangeCodeForTokens(code: String) async throws
+    func makeAuthorizationRequest() throws -> AuthorizationRequest  // URL + state
+    func exchangeCodeForTokens(code: String, state: String) async throws
+    func cancelPendingAuthorization()
     func saveTokens(to keychain: KeychainWrapper) throws
     func loadTokens(from keychain: KeychainWrapper) throws
     
@@ -350,11 +351,14 @@ actor GoogleDriveClient {
 
 ### OAuth Flow
 
-1. Generate authorization URL with `drive.file` scope
-2. User authenticates in browser
-3. Exchange authorization code for tokens
-4. Store refresh token in Keychain
-5. Auto-refresh access token when expired
+1. Generate a fresh `state` and PKCE code verifier (32 random bytes each, base64url) for the attempt
+2. Generate authorization URL with `drive.file` scope, `state`, and `code_challenge` (S256)
+3. User authenticates in browser; the loopback server accepts only `GET /` with the matching `state`
+4. Exchange authorization code for tokens, sending the `code_verifier`; the attempt is single use and the `state` is re-checked in constant time
+5. Store refresh token in Keychain
+6. Auto-refresh access token when expired
+
+The `state`/PKCE helpers and callback parsing live in `OAuthSecurity.swift` and are covered by `Tests/OAuthSecurityTests.swift`.
 
 ### Resumable Upload Protocol
 

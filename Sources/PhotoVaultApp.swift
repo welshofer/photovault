@@ -720,9 +720,8 @@ struct AuthenticationView: View {
         authError = nil
 
         Task {
+            let driveClient = GoogleDriveClient(clientID: clientID, clientSecret: clientSecret)
             do {
-                let driveClient = GoogleDriveClient(clientID: clientID, clientSecret: clientSecret)
-
                 // Start a local HTTP server to receive the OAuth callback
                 let server = OAuthLoopbackServer()
                 let port = try server.start()
@@ -730,15 +729,15 @@ struct AuthenticationView: View {
                 // Tell the drive client which port we're listening on
                 await driveClient.setRedirectPort(port)
 
-                // Build the auth URL and open in default browser
-                let authURL = await driveClient.authorizationURL()
-                NSWorkspace.shared.open(authURL)
+                // Build the auth URL (fresh state + PKCE challenge) and open in default browser
+                let authRequest = try await driveClient.makeAuthorizationRequest()
+                NSWorkspace.shared.open(authRequest.url)
 
-                // Wait for Google to redirect back to our local server
-                let code = try await server.waitForCode()
+                // Wait for Google to redirect back with this attempt's state
+                let callback = try await server.waitForCallback(expectedState: authRequest.state)
 
-                // Exchange the code for tokens
-                try await driveClient.exchangeCodeForTokens(code: code)
+                // Exchange the code for tokens (re-checks state, sends the PKCE verifier)
+                try await driveClient.exchangeCodeForTokens(code: callback.code, state: callback.state)
 
                 // Save tokens to keychain
                 let keychain = KeychainWrapper()
@@ -746,6 +745,7 @@ struct AuthenticationView: View {
 
                 await onAuthenticated(driveClient)
             } catch {
+                await driveClient.cancelPendingAuthorization()
                 authError = error.localizedDescription
             }
             isAuthenticating = false
@@ -756,9 +756,17 @@ struct AuthenticationView: View {
 // MARK: - OAuth Loopback Server
 
 /// Minimal HTTP server on localhost to receive Google OAuth redirect for Desktop app clients.
+/// Binds 127.0.0.1 only and accepts only `GET /` carrying the expected `state`; any other
+/// request is answered with an error and ignored, so it cannot end or hijack the sign-in.
 /// Uses blocking accept() on a detached task to avoid RunLoop/notification issues.
 final class OAuthLoopbackServer: @unchecked Sendable {
     private var serverSocket: Int32 = -1
+
+    /// The authorization code and state from a callback that matched this sign-in attempt.
+    struct Callback: Sendable {
+        let code: String
+        let state: String
+    }
 
     /// Starts the server, returns the port it's listening on.
     func start() throws -> UInt16 {
@@ -772,7 +780,7 @@ final class OAuthLoopbackServer: @unchecked Sendable {
         addr.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
         addr.sin_family = sa_family_t(AF_INET)
         addr.sin_port = 0  // Let OS pick a port
-        addr.sin_addr.s_addr = inet_addr("127.0.0.1")
+        addr.sin_addr.s_addr = inet_addr("127.0.0.1")  // Loopback only, never all interfaces
 
         let bindResult = withUnsafePointer(to: &addr) {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
@@ -780,12 +788,12 @@ final class OAuthLoopbackServer: @unchecked Sendable {
             }
         }
         guard bindResult == 0 else {
-            close(serverSocket)
+            stop()
             throw URLError(.cannotConnectToHost)
         }
 
         guard Darwin.listen(serverSocket, 1) == 0 else {
-            close(serverSocket)
+            stop()
             throw URLError(.cannotConnectToHost)
         }
 
@@ -799,80 +807,129 @@ final class OAuthLoopbackServer: @unchecked Sendable {
         return UInt16(bigEndian: boundAddr.sin_port)
     }
 
-    /// Blocks (on a background thread) until Google redirects, then returns the auth code.
-    func waitForCode() async throws -> String {
+    /// Blocks (on a background thread) until Google redirects back with `expectedState`,
+    /// then returns the authorization code. Requests with another path, method or state are
+    /// rejected and ignored. Throws if Google reports an error or `timeout` elapses.
+    /// The listening socket is closed when this returns.
+    func waitForCallback(expectedState: String, timeout: TimeInterval = 600) async throws -> Callback {
         let sock = serverSocket
+        defer { stop() }
+        guard sock >= 0 else { throw URLError(.cannotConnectToHost) }
+
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
-                // Blocking accept — waits for Google's redirect
-                var clientAddr = sockaddr_in()
-                var clientLen = socklen_t(MemoryLayout<sockaddr_in>.size)
-                let clientSocket = withUnsafeMutablePointer(to: &clientAddr) {
-                    $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
-                        accept(sock, $0, &clientLen)
+                let deadline = Date().addingTimeInterval(timeout)
+
+                while true {
+                    // Wait for a connection, but not past the deadline
+                    let remaining = deadline.timeIntervalSinceNow
+                    guard remaining > 0 else {
+                        continuation.resume(throwing: OAuthFlowError.timedOut)
+                        return
                     }
-                }
+                    var pollDescriptor = pollfd(fd: sock, events: Int16(POLLIN), revents: 0)
+                    let ready = poll(&pollDescriptor, 1, Int32(min(remaining * 1000, Double(Int32.max))))
+                    if ready == 0 { continue }  // Deadline re-checked at the top of the loop
+                    if ready < 0 {
+                        if errno == EINTR { continue }
+                        continuation.resume(throwing: URLError(.cannotConnectToHost))
+                        return
+                    }
 
-                guard clientSocket >= 0 else {
-                    continuation.resume(throwing: URLError(.cannotConnectToHost))
-                    return
-                }
+                    var clientAddr = sockaddr_in()
+                    var clientLen = socklen_t(MemoryLayout<sockaddr_in>.size)
+                    let clientSocket = withUnsafeMutablePointer(to: &clientAddr) {
+                        $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                            accept(sock, $0, &clientLen)
+                        }
+                    }
 
-                // Read the HTTP request
-                var buffer = [UInt8](repeating: 0, count: 8192)
-                let bytesRead = recv(clientSocket, &buffer, buffer.count, 0)
-                let requestString: String
-                if bytesRead > 0 {
-                    requestString = String(bytes: buffer[..<bytesRead], encoding: .utf8) ?? ""
-                } else {
-                    requestString = ""
-                }
+                    guard clientSocket >= 0 else {
+                        if errno == EINTR || errno == ECONNABORTED { continue }
+                        continuation.resume(throwing: URLError(.cannotConnectToHost))
+                        return
+                    }
 
-                // Parse the code from: GET /?code=XXXX&scope=... HTTP/1.1
-                var code: String?
-                if let firstLine = requestString.components(separatedBy: "\r\n").first,
-                   let urlPart = firstLine.split(separator: " ").dropFirst().first,
-                   let components = URLComponents(string: "http://localhost\(urlPart)") {
-                    code = components.queryItems?.first(where: { $0.name == "code" })?.value
-                }
+                    // Don't let a client that connects but never sends stall the sign-in
+                    var readTimeout = timeval(tv_sec: 5, tv_usec: 0)
+                    setsockopt(clientSocket, SOL_SOCKET, SO_RCVTIMEO, &readTimeout, socklen_t(MemoryLayout<timeval>.size))
+                    // A client that hangs up early must not raise SIGPIPE when we answer it
+                    var noSigPipe: Int32 = 1
+                    setsockopt(clientSocket, SOL_SOCKET, SO_NOSIGPIPE, &noSigPipe, socklen_t(MemoryLayout<Int32>.size))
 
-                // Send response to the browser
-                let body: String
-                if code != nil {
-                    body = """
-                    <html><body style="font-family:-apple-system,sans-serif;text-align:center;padding:60px;">
-                    <h1>Authentication Successful</h1>
-                    <p>You can close this tab and return to PhotoVault.</p>
-                    </body></html>
-                    """
-                } else {
-                    body = """
-                    <html><body style="font-family:-apple-system,sans-serif;text-align:center;padding:60px;">
-                    <h1>Authentication Failed</h1>
-                    <p>No authorization code received.</p>
-                    </body></html>
-                    """
-                }
-                let response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: \(body.utf8.count)\r\nConnection: close\r\n\r\n\(body)"
-                _ = response.withCString { ptr in
-                    send(clientSocket, ptr, strlen(ptr), 0)
-                }
-                close(clientSocket)
-                close(sock)
+                    // Read the HTTP request
+                    var buffer = [UInt8](repeating: 0, count: 8192)
+                    let bytesRead = recv(clientSocket, &buffer, buffer.count, 0)
+                    let requestString: String
+                    if bytesRead > 0 {
+                        requestString = String(bytes: buffer[..<bytesRead], encoding: .utf8) ?? ""
+                    } else {
+                        requestString = ""
+                    }
 
-                if let code {
-                    continuation.resume(returning: code)
-                } else {
-                    continuation.resume(throwing: URLError(.userAuthenticationRequired))
+                    // Expect: GET /?state=XXXX&code=XXXX&scope=... HTTP/1.1
+                    let outcome = OAuthLoopbackCallback.evaluate(
+                        requestHead: requestString,
+                        expectedState: expectedState
+                    )
+
+                    switch outcome {
+                    case .authorized(let code, let state):
+                        OAuthLoopbackServer.respond(to: clientSocket, status: 200, title: "Authentication Successful",
+                                     message: "You can close this tab and return to PhotoVault.")
+                        close(clientSocket)
+                        continuation.resume(returning: Callback(code: code, state: state))
+                        return
+
+                    case .denied(let error):
+                        OAuthLoopbackServer.respond(to: clientSocket, status: 200, title: "Authentication Failed",
+                                     message: "Google sign-in was not completed. Return to PhotoVault to try again.")
+                        close(clientSocket)
+                        continuation.resume(throwing: OAuthFlowError.authorizationDenied(error))
+                        return
+
+                    case .rejected(let status):
+                        // Not this attempt's callback: refuse it and keep waiting
+                        OAuthLoopbackServer.respond(to: clientSocket, status: status, title: "Request Rejected",
+                                     message: "This request was not part of the PhotoVault sign-in.")
+                        close(clientSocket)
+                    }
                 }
             }
         }
     }
 
-    deinit {
+    /// Closes the listening socket (idempotent).
+    func stop() {
         if serverSocket >= 0 {
             close(serverSocket)
+            serverSocket = -1
         }
+    }
+
+    /// Sends a small static HTML page. Never echoes anything from the request.
+    private static func respond(to clientSocket: Int32, status: Int, title: String, message: String) {
+        let reason: String
+        switch status {
+        case 200: reason = "OK"
+        case 404: reason = "Not Found"
+        case 405: reason = "Method Not Allowed"
+        default: reason = "Bad Request"
+        }
+        let body = """
+        <html><body style="font-family:-apple-system,sans-serif;text-align:center;padding:60px;">
+        <h1>\(title)</h1>
+        <p>\(message)</p>
+        </body></html>
+        """
+        let response = "HTTP/1.1 \(status) \(reason)\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: \(body.utf8.count)\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n\(body)"
+        _ = response.withCString { ptr in
+            send(clientSocket, ptr, strlen(ptr), 0)
+        }
+    }
+
+    deinit {
+        stop()
     }
 }
 
